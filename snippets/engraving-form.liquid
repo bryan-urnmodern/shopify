@@ -1,14 +1,30 @@
 {%- comment -%}
   Engraving Form Snippet
   Place this just before the Add to Cart button in your product form:
-    {% render 'engraving-form' %}
+    {% render 'engraving-form', product: product %}
+
+  Engraving fee: charged by adding the "Engraving" product (handle
+  `engraving`) to the cart alongside the engraved item, one per unit.
+  See assets/product-form.js and snippets/engraving-cart-guard.liquid.
+  If that product doesn't exist, engraving is offered free.
 {%- endcomment -%}
 
-<div class="engraving-form" data-engraving-form>
+{%- liquid
+  assign engraving_variant = all_products['engraving'].selected_or_first_available_variant
+-%}
+
+<div
+  class="engraving-form"
+  data-engraving-form
+  {% if engraving_variant %}
+    data-engraving-variant-id="{{ engraving_variant.id }}"
+    data-engraving-product-title="{{ product.title | escape }}"
+  {% endif %}
+>
   <input type="hidden" name="properties[Engraving]" value="No" data-engraving-flag>
 
   <div class="engraving-form__field">
-    <label class="engraving-form__label" for="engraving-toggle">Add Engraving (Free)</label>
+    <label class="engraving-form__label" for="engraving-toggle">Add Engraving ({% if engraving_variant %}+{{ engraving_variant.price | money_without_trailing_zeros }}{% else %}Free{% endif %})</label>
     <select
       class="engraving-form__select"
       id="engraving-toggle"

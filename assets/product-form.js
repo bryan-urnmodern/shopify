@@ -42,9 +42,14 @@ if (!customElements.get('product-form')) {
         }
         config.body = formData;
 
+        const engravingFee = this.getEngravingFeeItem(formData);
+        if (engravingFee) config.body = this.buildEngravingBody(formData, engravingFee, config);
+
         fetch(`${routes.cart_add_url}`, config)
           .then((response) => response.json())
           .then((response) => {
+            // Multi-item adds return { items, sections }; the cart UI expects the engraved item.
+            if (response.items) response = { ...response.items[0], sections: response.sections };
             if (response.status) {
               publish(PUB_SUB_EVENTS.cartError, {
                 source: 'product-form',
@@ -107,6 +112,42 @@ if (!customElements.get('product-form')) {
 
             CartPerformance.measureFromEvent("add:user-action", evt);
           });
+      }
+
+      // Returns the engraving fee line to add alongside this item, or null.
+      getEngravingFeeItem(formData) {
+        const engraving = this.form.querySelector('[data-engraving-form]');
+        const feeVariantId = engraving && engraving.dataset.engravingVariantId;
+        if (!feeVariantId || formData.get('properties[Engraving]') !== 'Yes') return null;
+
+        const ref = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+        return {
+          id: feeVariantId,
+          quantity: parseInt(formData.get('quantity'), 10) || 1,
+          properties: { For: engraving.dataset.engravingProductTitle, _engraving_ref: ref },
+        };
+      }
+
+      // Converts the form into a JSON cart/add body carrying the item and its engraving fee.
+      buildEngravingBody(formData, feeItem, config) {
+        const item = {
+          id: formData.get('id'),
+          quantity: feeItem.quantity,
+          properties: { _engraving_ref: feeItem.properties._engraving_ref },
+        };
+        if (formData.get('selling_plan')) item.selling_plan = formData.get('selling_plan');
+        formData.forEach((value, key) => {
+          const match = key.match(/^properties\[(.+)\]$/);
+          if (match && value !== '') item.properties[match[1]] = value;
+        });
+
+        const body = { items: [item, feeItem] };
+        if (formData.get('sections')) {
+          body.sections = formData.get('sections');
+          body.sections_url = formData.get('sections_url');
+        }
+        config.headers['Content-Type'] = 'application/json';
+        return JSON.stringify(body);
       }
 
       handleErrorMessage(errorMessage = false) {

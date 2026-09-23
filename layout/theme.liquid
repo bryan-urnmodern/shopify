@@ -383,5 +383,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     {%- if settings.cart_type == 'drawer' -%}
       <script src="{{ 'cart-drawer.js' | asset_url }}" defer="defer"></script>
     {%- endif -%}
+
+    {% render 'engraving-cart-guard' %}
   </body>
 </html>

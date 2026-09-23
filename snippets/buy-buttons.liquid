@@ -71,7 +71,7 @@
             endif
           -%}
           {% if product.tags contains 'engravable' %}
-            {% render 'engraving-form' %}
+            {% render 'engraving-form', product: product %}
           {% endif %}
           <button
             id="ProductSubmitButton-{{ section_id }}"

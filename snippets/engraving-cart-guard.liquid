@@ -1,0 +1,105 @@
+{%- comment -%}
+  Engraving Cart Guard
+  Keeps each engraving fee line (the "Engraving" product) in step with the
+  engraved item it was added with, matched by the hidden _engraving_ref
+  property:
+    - fee quantity always matches the engraved item's quantity
+    - an engraved item whose fee was removed gets the fee back
+    - a fee whose engraved item was removed is removed
+  Runs on page load, after every cart change, and just before checkout.
+  Rendered once from layout/theme.liquid.
+{%- endcomment -%}
+
+{%- assign engraving_variant = all_products['engraving'].selected_or_first_available_variant -%}
+
+{%- if engraving_variant -%}
+<script>
+(function () {
+  var FEE_VARIANT_ID = {{ engraving_variant.id | json }};
+  var root = (window.Shopify && Shopify.routes && Shopify.routes.root) || '/';
+
+  function postJson(path, body) {
+    return fetch(root + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(body)
+    });
+  }
+
+  // Resolves to true if the cart had to be changed.
+  function reconcile() {
+    return fetch(root + 'cart.js', { headers: { 'Accept': 'application/json' } })
+      .then(function (res) { return res.json(); })
+      .then(function (cart) {
+        var engraved = {};
+        var fees = [];
+
+        cart.items.forEach(function (line) {
+          var ref = line.properties && line.properties._engraving_ref;
+          if (!ref) return;
+          if (line.variant_id === FEE_VARIANT_ID) {
+            fees.push(line);
+          } else {
+            engraved[ref] = engraved[ref] || { quantity: 0, title: line.product_title };
+            engraved[ref].quantity += line.quantity;
+          }
+        });
+
+        var updates = {};
+        var seen = {};
+        fees.forEach(function (fee) {
+          var ref = fee.properties._engraving_ref;
+          var wanted = seen[ref] || !engraved[ref] ? 0 : engraved[ref].quantity;
+          seen[ref] = true;
+          if (fee.quantity !== wanted) updates[fee.key] = wanted;
+        });
+
+        var missing = [];
+        Object.keys(engraved).forEach(function (ref) {
+          if (!seen[ref]) {
+            missing.push({
+              id: FEE_VARIANT_ID,
+              quantity: engraved[ref].quantity,
+              properties: { For: engraved[ref].title, _engraving_ref: ref }
+            });
+          }
+        });
+
+        // Run sequentially: line keys can shift after an update.
+        var chain = Promise.resolve();
+        if (Object.keys(updates).length) chain = chain.then(function () { return postJson('cart/update.js', { updates: updates }); });
+        if (missing.length) chain = chain.then(function () { return postJson('cart/add.js', { items: missing }); });
+        return chain.then(function () { return Object.keys(updates).length > 0 || missing.length > 0; });
+      });
+  }
+
+  function reconcileAndRefresh() {
+    return reconcile()
+      .then(function (changed) {
+        if (changed && document.querySelector('cart-items, cart-drawer-items')) window.location.reload();
+      })
+      .catch(function () {});
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    reconcileAndRefresh();
+    if (typeof subscribe === 'function' && typeof PUB_SUB_EVENTS !== 'undefined') {
+      subscribe(PUB_SUB_EVENTS.cartUpdate, function (event) {
+        if (event.source === 'cart-items') reconcileAndRefresh();
+      });
+    }
+  });
+
+  // Re-check right before checkout.
+  document.addEventListener('click', function (event) {
+    var button = event.target.closest('[name="checkout"], a[href$="/checkout"]');
+    if (!button) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    reconcile()
+      .catch(function () {})
+      .then(function () { window.location.href = root + 'checkout'; });
+  }, true);
+})();
+</script>
+{%- endif -%}
