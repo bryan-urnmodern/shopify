@@ -71,6 +71,7 @@
         },
         "icon_with_text_GKqMNx": {
           "type": "icon-with-text",
+          "disabled": true,
           "settings": {
             "layout": "vertical",
             "icon_1": "none",
@@ -87,7 +88,7 @@
           "settings": {
             "heading": "DESCRIPTION",
             "icon": "none",
-            "content": "<p>This high-quality ceramic cremation urn for human ashes is a modern, handcrafted tribute suitable for display in the home, garden, or columbarium. Finished in a rich black, this adult-size urn symbolizes strength, remembrance, and timeless love. Its simple yet refined design honors the dignity of a loved one’s life, offering a meaningful and enduring memorial after cremation.</p>",
+            "content": "<p>This high-quality ceramic cremation urn for human ashes is a modern, handcrafted tribute suitable for display in the home, garden, or columbarium. Finished in a rich black, this keepsake-size urn symbolizes strength, remembrance, and timeless love. Its simple yet refined design honors the dignity of a loved one’s life, offering a meaningful and enduring memorial after cremation.</p>",
             "page": ""
           }
         },
@@ -96,7 +97,7 @@
           "settings": {
             "heading": "CAPACITY & WEIGHT",
             "icon": "none",
-            "content": "<p>Up to 230 cubic inches. Ideal for a body weight of up to 230 lbs prior to cremation. </p>",
+            "content": "<p>Up to 42 cubic inches. Ideal for a body weight of up to 42 lbs prior to cremation.&nbsp;</p>",
             "page": ""
           }
         },
@@ -105,7 +106,7 @@
           "settings": {
             "heading": "DIMENSIONS",
             "icon": "none",
-            "content": "<p>10.5\" H x 7\" L x 7\" W</p>",
+            "content": "<p>6\" H x 4\" L x 4\" W</p>",
             "page": ""
           }
         },
